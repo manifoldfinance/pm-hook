@@ -1,10 +1,10 @@
-import { VercelRequest, VercelResponse } from "@vercel/node";
-import { LinearClient } from "@linear/sdk";
-import { Octokit } from "octokit";
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { LinearClient } from '@linear/sdk';
+import { Octokit } from 'octokit';
 
-import { LINEAR_DISPLAY_NAME_TO_GH_LOGIN } from "./github-linear-users-config";
+import { LINEAR_DISPLAY_NAME_TO_GH_LOGIN } from './github-linear-users-config';
 
-const GH_ID_PREFIX = "GH-ID:";
+const GH_ID_PREFIX = 'GH-ID:';
 
 interface GithubIssueId {
   owner: string;
@@ -13,7 +13,7 @@ interface GithubIssueId {
 }
 
 function shouldCloseIssueAfterUpdate(body: any): boolean {
-  if (body.action !== "update") {
+  if (body.action !== 'update') {
     return false;
   }
 
@@ -23,8 +23,7 @@ function shouldCloseIssueAfterUpdate(body: any): boolean {
 
   if (
     body.updatedFrom.stateId !== undefined &&
-    (body.data.state.type === "canceled" ||
-      body.data.state.type === "completed")
+    (body.data.state.type === 'canceled' || body.data.state.type === 'completed')
   ) {
     return true;
   }
@@ -33,11 +32,11 @@ function shouldCloseIssueAfterUpdate(body: any): boolean {
 }
 
 function shouldCloseIssueAfterRemove(body: any): boolean {
-  return body.action === "remove";
+  return body.action === 'remove';
 }
 
 function shouldUpdateAssignees(body: any): boolean {
-  if (body.action !== "update") {
+  if (body.action !== 'update') {
     return false;
   }
 
@@ -49,20 +48,17 @@ function shouldUpdateAssignees(body: any): boolean {
 }
 
 function shouldOpenIssueAfterBeingRestored(body: any): boolean {
-  return body.action === "restore";
+  return body.action === 'restore';
 }
 
 function shouldOpenIssueAfterUpdate(body: any): boolean {
-  if (body.action !== "update") {
+  if (body.action !== 'update') {
     return false;
   }
 
   if (
     body.updatedFrom.stateId !== undefined &&
-    !(
-      body.data.state.type === "canceled" ||
-      body.data.state.type === "completed"
-    )
+    !(body.data.state.type === 'canceled' || body.data.state.type === 'completed')
   ) {
     return true;
   }
@@ -77,13 +73,13 @@ function getGithubIssueIdFromDescription(body: any): GithubIssueId | undefined {
     return undefined;
   }
 
-  const line = description.split("\n").find((l) => l.includes(GH_ID_PREFIX))!;
+  const line = description.split('\n').find((l) => l.includes(GH_ID_PREFIX))!;
   const ghId = line.slice(GH_ID_PREFIX.length).trim();
 
-  const [tag, ns] = ghId.split("#");
+  const [tag, ns] = ghId.split('#');
   const n = +ns;
 
-  const [owner, repo] = tag.split("/");
+  const [owner, repo] = tag.split('/');
 
   if (Number.isNaN(n) || owner === undefined || repo === undefined) {
     return undefined;
@@ -116,24 +112,19 @@ function getOctokit() {
 
 async function closeGithubIssue(ghId: GithubIssueId) {
   const octokit = getOctokit();
-  await octokit.rest.issues.update({ ...ghId, state: "closed" });
+  await octokit.rest.issues.update({ ...ghId, state: 'closed' });
 }
 
 async function openGithubIssue(ghId: GithubIssueId) {
   const octokit = getOctokit();
-  await octokit.rest.issues.update({ ...ghId, state: "open" });
+  await octokit.rest.issues.update({ ...ghId, state: 'open' });
 }
 
-async function removeGithubIssueAssignees(
-  ghId: GithubIssueId,
-  exception?: string
-) {
+async function removeGithubIssueAssignees(ghId: GithubIssueId, exception?: string) {
   const octokit = getOctokit();
   const assigneesData = await octokit.rest.issues.listAssignees({ ...ghId });
 
-  const assignees = assigneesData.data
-    .map((a) => a.login)
-    .filter((l) => l !== exception);
+  const assignees = assigneesData.data.map((a) => a.login).filter((l) => l !== exception);
 
   await octokit.rest.issues.removeAssignees({
     ...ghId,
@@ -141,10 +132,7 @@ async function removeGithubIssueAssignees(
   });
 }
 
-async function addGithubIssueAssignee(
-  ghId: GithubIssueId,
-  assigneeLogin: string
-) {
+async function addGithubIssueAssignee(ghId: GithubIssueId, assigneeLogin: string) {
   const octokit = getOctokit();
   await octokit.rest.issues.addAssignees({
     ...ghId,
@@ -156,28 +144,22 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   try {
     const ghId = getGithubIssueIdFromDescription(req.body);
     if (ghId === undefined) {
-      console.log("No associated GH issue found");
+      console.log('No associated GH issue found');
       return;
     }
 
-    if (
-      shouldCloseIssueAfterRemove(req.body) ||
-      shouldCloseIssueAfterUpdate(req.body)
-    ) {
-      console.log("Closing Github issue");
+    if (shouldCloseIssueAfterRemove(req.body) || shouldCloseIssueAfterUpdate(req.body)) {
+      console.log('Closing Github issue');
       await closeGithubIssue(ghId);
     }
 
-    if (
-      shouldOpenIssueAfterBeingRestored(req.body) ||
-      shouldOpenIssueAfterUpdate(req.body)
-    ) {
-      console.log("Reopening Github issue");
+    if (shouldOpenIssueAfterBeingRestored(req.body) || shouldOpenIssueAfterUpdate(req.body)) {
+      console.log('Reopening Github issue');
       await openGithubIssue(ghId);
     }
 
     if (shouldUpdateAssignees(req.body)) {
-      console.log("Updating Github issue assignees");
+      console.log('Updating Github issue assignees');
       const assignee = await getGithubAssignee(req.body);
 
       await removeGithubIssueAssignees(ghId, assignee);
