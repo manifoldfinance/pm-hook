@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "rootDir": "./",
+    "outDir": "./dist",
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+    "importHelpers": true,
+    "downlevelIteration": true,
+    "declaration": true,
+    "resolveJsonModule": true
+  },
+  "exclude": [
+    "build",
+    "dist",
+    "node_modules"
+  ],
+  "include": [
+    "api/**/*.ts"
+  ]
+}
